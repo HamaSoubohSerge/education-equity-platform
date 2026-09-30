@@ -1,0 +1,10 @@
+column_aliases:
+  "FID": fid
+  "region_nom_bdd": region
+  "prefecture_nom_bdd": prefecture
+  "commune_nom_bdd": commune
+  "canton_nom_bdd": canton
+  "batiment_nom": nom_batiment
+  "batiment_fonction": fonction
+  "batiment_annee": annee_construction
+  "geometry": geometry_wkt

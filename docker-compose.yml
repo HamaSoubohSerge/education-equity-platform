@@ -1,0 +1,143 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: education-mongodb
+    restart: always
+    command: mongod --bind_ip_all
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+    container_name: education-minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  spark:
+    container_name: education-spark
+    build:
+      context: .
+      dockerfile: docker/spark/Dockerfile
+    ports:
+      - "8085:8080"
+    volumes:
+      - ./spark/jobs:/opt/spark-apps/jobs
+    environment:
+      MONGO_URI: mongodb://education-mongodb:27017/education_db
+      MINIO_ENDPOINT: http://education-minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master"]
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  airflow:
+    container_name: education-airflow
+    build:
+      context: .
+      dockerfile: docker/airflow/Dockerfile
+    user: "0:0"
+    ports:
+      - "8081:8080"
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      MONGO_URI: mongodb://education-mongodb:27017/education_db
+      MINIO_ENDPOINT: http://education-minio:9000
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: standalone
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+  ingestion:
+    container_name: education-ingestion
+    build:
+      context: .
+      dockerfile: docker/ingestion/Dockerfile
+    volumes:
+      - ./data:/data:ro
+    environment:
+      MONGO_URI: mongodb://education-mongodb:27017/education_db
+      MINIO_ENDPOINT: http://education-minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      LOCAL_DATA_DIR: /data
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+  
+  processing:
+    container_name: education-processing
+    build:
+      context: .
+      dockerfile: docker/processing/Dockerfile
+    environment:
+      MONGO_URI: mongodb://education-mongodb:27017/education_db
+      MINIO_ENDPOINT: http://education-minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  api:
+    container_name: education-api
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      MONGO_URI: mongodb://education-mongodb:27017/education_db
+      MINIO_ENDPOINT: http://education-minio:9000
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  streamlit:
+    container_name: education-streamlit
+    build:
+      context: .
+      dockerfile: docker/streamlit/Dockerfile
+    ports:
+      - "8600:8501"
+    environment:
+      API_URL: http://education-api:8000
+    depends_on:
+      - api
+
+volumes:
+  mongo_data:
+  minio_data:

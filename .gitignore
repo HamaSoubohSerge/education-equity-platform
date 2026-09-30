@@ -1,0 +1,29 @@
+data/*
+!data/.gitkeep
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Airflow
+airflow/logs/
+airflow/airflow.db
+airflow/standalone_admin_password.txt
+*.pid
+
+# Docker / volumes
+*.log
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Éditeurs
+.vscode/
+.idea/

@@ -1,0 +1,7 @@
+pandas
+openpyxl
+pyyaml
+boto3
+pymongo
+shapely
+pdfplumber

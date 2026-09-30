@@ -1,0 +1,31 @@
+expected_columns:
+  - code_etablissement
+  - nom_etablissement
+  - code_admin
+  - type_etablissement
+  - statut
+  - region
+  - inspection
+  - prefecture
+  - commune
+  - canton
+  - localite
+  - milieu
+  - latitude
+  - longitude
+
+column_aliases:
+  "Code etablissement": code_etablissement
+  "Nom Établissement": nom_etablissement
+  "Code admin": code_admin
+  "Type": type_etablissement
+  "Statut": statut
+  "Région (DRE)": region
+  "Inspection": inspection
+  "Préfecture": prefecture
+  "Commune": commune
+  "Canton": canton
+  "Localité": localite
+  "Milieu": milieu
+  "Latitude": latitude
+  "Longitude": longitude
